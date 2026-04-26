@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+<meta name="theme-color" content="#fef3c7" />
+<title>方言ガチャ</title>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+P+One&family=Kosugi+Maru&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;overflow:hidden}
+body{font-family:"Kosugi Maru",system-ui,sans-serif;color:#3a2a1c;background:linear-gradient(180deg,#fef3c7,#fbbf24);touch-action:manipulation;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{display:flex;flex-direction:column;height:100dvh;padding:14px;gap:10px;max-width:480px;margin:0 auto}
+.title{font-family:"Mochiy Pop P One",sans-serif;font-size:24px;color:#d97706;-webkit-text-stroke:2.5px #fff;paint-order:stroke fill;text-shadow:3px 3px 0 #3a2a1c;text-align:center;margin:6px 0}
+.input-card{background:#fff;border:3px solid #3a2a1c;border-radius:14px;padding:14px;box-shadow:3px 3px 0 #3a2a1c;display:flex;flex-direction:column;gap:8px}
+.input-card label{font-size:11px;font-weight:bold;color:#d97706}
+.input-card input{background:#fef3c7;border:2px solid #3a2a1c;border-radius:8px;padding:10px;font-size:15px;font-family:inherit;width:100%}
+.modes{display:flex;gap:6px;flex-wrap:wrap}
+.modes button{flex:1;background:#fff;border:2px solid #3a2a1c;color:#3a2a1c;padding:6px;font-size:11px;border-radius:8px;cursor:pointer;font-family:inherit;min-width:60px}
+.modes button.on{background:#d97706;color:#fff}
+.go{background:#d97706;color:#fff;border:3px solid #3a2a1c;padding:12px;font-family:"Mochiy Pop P One",sans-serif;font-size:14px;border-radius:12px;cursor:pointer;box-shadow:3px 3px 0 #3a2a1c}
+.go:active{transform:translate(2px,2px);box-shadow:1px 1px 0 #3a2a1c}
+.result{flex:1;background:#fff;border:3px solid #3a2a1c;border-radius:18px;padding:18px;box-shadow:4px 4px 0 #3a2a1c;display:none;flex-direction:column;gap:14px;overflow-y:auto}
+.result.show{display:flex}
+.result .place{font-family:"Mochiy Pop P One",sans-serif;font-size:18px;color:#d97706;text-align:center}
+.result .quote{background:#fef3c7;border:2px dashed #3a2a1c;border-radius:14px;padding:14px;font-size:18px;line-height:1.7;font-family:"Mochiy Pop P One",sans-serif;text-align:center}
+.result .original{font-size:11px;opacity:.6;text-align:center;line-height:1.5}
+.actions{display:flex;gap:8px;justify-content:center}
+.actions button{flex:1;background:#fff;color:#3a2a1c;border:3px solid #3a2a1c;padding:10px;font-family:"Mochiy Pop P One",sans-serif;font-size:12px;border-radius:12px;cursor:pointer;box-shadow:2px 2px 0 #3a2a1c}
+.actions .share{background:#1da1f2;color:#fff}
+.actions button:disabled{opacity:.4}
+.note{font-size:9px;text-align:center;opacity:.6;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app">
+<h1 class="title">方言ガチャ 🌾</h1>
+<div class="input-card">
+  <label>標準語の文章</label>
+  <input id="txt" type="text" placeholder="例: ありがとう、好きだよ" maxlength="60"/>
+  <label>地域</label>
+  <div class="modes" id="modes">
+    <button data-r="random" class="on">🎲 ランダム</button>
+    <button data-r="hokkaido">北海道</button>
+    <button data-r="tohoku">東北</button>
+    <button data-r="kanto">関東</button>
+    <button data-r="kansai">関西</button>
+    <button data-r="kyushu">九州</button>
+    <button data-r="okinawa">沖縄</button>
+  </div>
+  <button class="go" id="btn-go">🌾 方言にする</button>
+</div>
+<div class="result" id="result">
+  <div class="place" id="place">—</div>
+  <div class="quote" id="quote">—</div>
+  <div class="original">原文: <span id="orig">—</span></div>
+</div>
+<div class="actions">
+  <button id="btn-share" class="share" disabled>🔗 シェア</button>
+</div>
+<div class="note">※ ニュアンス重視のジョーク変換。正確性は保証しません。</div>
+</div>
+<script>
+(()=>{
+'use strict';
+const SHARE_URL='https://maxtakaharu34-cmd.github.io/hougen-jp/';
+const DIALECTS={
+hokkaido:{name:'北海道弁',rules:[[/だよ/g,'っしょ'],[/だね/g,'だべさ'],[/とても/g,'なまら'],[/疲れた/g,'こわい'],[/捨てる/g,'なげる'],[/ありがとう/g,'ありがとうね〜'],[/ですよ/g,'っしょ'],[/$/,'']]},
+tohoku:{name:'東北弁',rules:[[/だよ/g,'だべ'],[/とても/g,'んだなぁ'],[/疲れた/g,'こえぇ'],[/だめ/g,'なんね'],[/ありがとう/g,'おしょうしな'],[/ですよ/g,'だべ'],[/かわいい/g,'めんこい'],[/$/,'']]},
+kanto:{name:'江戸っ子',rules:[[/だよ/g,'だぜ！'],[/とても/g,'てやんでぇ'],[/$/,' べらんめぇ']]},
+kansai:{name:'関西弁',rules:[[/だよ/g,'やん'],[/だね/g,'やな'],[/とても/g,'めっちゃ'],[/疲れた/g,'しんどい'],[/ありがとう/g,'おおきに'],[/ですよ/g,'やで'],[/だめ/g,'あかん'],[/捨てる/g,'ほかす'],[/$/,'']]},
+kyushu:{name:'博多弁',rules:[[/だよ/g,'と'],[/だね/g,'やね'],[/とても/g,'ばり'],[/ですよ/g,'と'],[/ありがとう/g,'好いとー'],[/$/,'たい']]},
+okinawa:{name:'沖縄弁',rules:[[/ありがとう/g,'にふぇーでーびる'],[/こんにちは/g,'はいさい'],[/$/,'さー']]}
+};
+const REGIONS=Object.keys(DIALECTS);
+const $=(id)=>document.getElementById(id);
+let region='random',last=null;
+function transform(text,r){
+  let out=text;
+  const d=DIALECTS[r];
+  for(const [from,to] of d.rules){out=out.replace(from,to)}
+  return{name:d.name,result:out};
+}
+function go(){
+  const t=$('txt').value.trim();if(!t)return;
+  const r=region==='random'?REGIONS[Math.floor(Math.random()*REGIONS.length)]:region;
+  const out=transform(t,r);
+  $('place').textContent='📍 '+out.name;
+  $('quote').textContent='「'+out.result+'」';
+  $('orig').textContent=t;
+  $('result').classList.add('show');$('btn-share').disabled=false;
+  last={name:out.name,result:out.result,orig:t};
+  fanfare();
+}
+let ac=null;const en=()=>{if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();if(ac.state==='suspended')ac.resume();return ac};
+const beep=(f,d,t='triangle',g=.13)=>{const a=en();const o=a.createOscillator();const gn=a.createGain();o.type=t;o.frequency.value=f;gn.gain.value=g;gn.gain.exponentialRampToValueAtTime(.0001,a.currentTime+d);o.connect(gn).connect(a.destination);o.start();o.stop(a.currentTime+d)};
+const fanfare=()=>{[523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.18),i*100))};
+document.querySelectorAll('#modes button').forEach(b=>b.addEventListener('click',()=>{
+  region=b.dataset.r;document.querySelectorAll('#modes button').forEach(x=>x.classList.toggle('on',x===b));
+}));
+$('btn-go').addEventListener('click',()=>{en();go()});
+$('btn-share').addEventListener('click',()=>{
+  if(!last)return;
+  const txt=`方言ガチャ：${last.name}\n「${last.result}」(原: ${last.orig}) #方言ガチャ`;
+  window.open(`https://x.com/intent/post?text=${encodeURIComponent(txt)}&url=${encodeURIComponent(SHARE_URL)}`,'_blank','noopener,noreferrer');
+});
+})();
+</script>
+</body>
+</html>
